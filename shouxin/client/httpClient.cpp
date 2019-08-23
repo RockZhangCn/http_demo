@@ -55,9 +55,10 @@ int main()
 //	{
 			/*准备发送数据*/
 			/*请输入发送的url：*/
-		  	cin>>sendbuf;
+            char filename[20];
+		  	cin>>filename;
             //组装成GET报文
-            httpRequest(srv_sock,sendbuf);
+            httpRequest(srv_sock,filename);
 			/*等待接收响应*/
 
 
@@ -92,10 +93,10 @@ void httpRequest(int fd,char* filename)
 {
      string s = filename;
 	 string url = method+s+version+host+connection+user_agent+acpt+encoding+language+space;
-	 char *p = url.data();
+	 strcpy(sendbuf,url.data());
 	 cout<<url<<endl;
-     cout<<p<<endl;
-	 
+     cout<<sendbuf<<endl;
+	  
            
    
 
