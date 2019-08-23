@@ -19,11 +19,15 @@ char ipaddr[]="172.22.211.202";
 #define port 8086
 
 const string method = "GET /";
-const string version = "HTTP/1.1 \r\n";
+const string version = " HTTP/1.1 \r\n";
 const string host = "Host: 172.22.211.202:8086\r\n";
 const string connection = "Connection: keep-alive\r\n";
 const string user_agent = "User-Agent: vivo-nanjing-11103875\r\n";
-const string accept = "Accept: */* \r\n";
+const string acpt = "Accept: */* \r\n";
+const string encoding = "Accept-Endcoding: gzip, deflate\r\n";
+const string language = "Accept-Language: zh-CN,zh;q=0.9\r\n";
+const string space = "\r\n";
+
 void* sendMsg(void* sock);
 void* recvMsg(void* sock);
 void httpRequest(int sock,char* url);
@@ -50,9 +54,15 @@ int main()
   //  while(1)
 //	{
 			/*准备发送数据*/
-			/*请输入发送的数据：*/
+			/*请输入发送的url：*/
 		  	cin>>sendbuf;
+            //组装成GET报文
             httpRequest(srv_sock,sendbuf);
+			/*等待接收响应*/
+
+
+
+
 		 //   send(srv_sock,sendbuf,sizeof(sendbuf),0);
             memset(&sendbuf,0,sizeof(sendbuf));
 		//	recv(srv_sock,recvbuf,sizeof(recvbuf),0);
@@ -78,11 +88,15 @@ int main()
 /*  发送http请求 
  *  arg:与服务器绑定的套接字
  *  */
-void httpRequest(int fd,char* url)
+void httpRequest(int fd,char* filename)
 {
-     string uri = url;
-	     
-      
+     string s = filename;
+	 string url = method+s+version+host+connection+user_agent+acpt+encoding+language+space;
+	 char *p = url.data();
+	 cout<<url<<endl;
+     cout<<p<<endl;
+	 
+           
    
 
 }
