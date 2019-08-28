@@ -10,10 +10,11 @@
 #include<netinet/in.h>
 #include<unistd.h>
 #include<pthread.h>
+#include<unistd.h>
 #include<sys/ioctl.h>
 
 using namespace std;
-#define buf 1024
+#define bufsize 1024
 #define port 8086
 
 const string method = "GET /";
@@ -26,27 +27,29 @@ const string encoding = "Accept-Endcoding: gzip, deflate\r\n";
 const string language = "Accept-Language: zh-CN,zh;q=0.9\r\n";
 const string space = "\r\n";
 
-void handleMsg();
-void httpResponse();
+void requestData();
 void connectToServer();
 void init();
 
-char recvbuf[buf];
-char sendbuf[buf];
+char recvbuf[bufsize];
+char sendbuf[bufsize];
 char filename[20];
 char ipaddr[]="172.22.211.202";
-int srv_sock,clt_sock;//套接字文件描述符
-struct sockaddr_in srv_addr,clt_addr;//网络地址
-socklen_t addrlen;//bind函数指定的地址类型
-pthread_t precv,psend;//处理事务的线程
+
+int srv_sock;//套接字文件描述符
+struct sockaddr_in srv_addr;//网络地址
+
 
 
 int main()
 {
+
+   //初始化套接字和地址变量
    init();
+   //向服务器发起连接请求
    connectToServer();
- 
-   handleMsg();
+   //向服务器请求数据并保存
+   requestData();
    
    return 0;
 }
@@ -55,7 +58,8 @@ int main()
 
 void init()
 {
-   if(srv_sock = socket(AF_INET,SOCK_STREAM,0)==-1)
+   srv_sock = socket(AF_INET,SOCK_STREAM,0);
+   if(srv_sock==-1)
    {
 	  cout<<"创建socket失败"<<endl;
 	  exit(1);
@@ -76,24 +80,23 @@ void connectToServer()
   }
   else
   cout<<"成功连接到"<<inet_ntoa(srv_addr.sin_addr)<<" "<<ntohs(srv_addr.sin_port)<<endl;
+  
 }
 
-/*  发送http请求 
- *  arg:与服务器绑定的套接字
- *  */
-void handleMsg()
+/*  发送http请求  */
+void requestData()
 {
 	  while(1)
 	  {
 	    cout<<"请输入请求的文件名"<<endl;
 	    cin>>filename;
-	  // char filename[] ="index.html";
+	  
 	    cout<<endl;
         //组装成GET报文
 	    if(strcmp(filename,"exit")==0)
 	    { 
           send(srv_sock,filename,sizeof(filename),0 );
-		  cout<<"connect end"<<endl;
+		  cout<<"disconnected"<<endl;
 		  break;
 	    }    
        
@@ -108,7 +111,8 @@ void handleMsg()
 			cout<<"recv error"<<endl;
 			break;
      	}
-		cout<<"收到的响应："<<endl;
+		cout<<"收到来自"<<inet_ntoa(srv_addr.sin_addr)<<":"<<srv_addr.sin_port<<"的响应："<<endl;
+	    cout<<endl;
 		cout<<recvbuf<<endl;
 
 		//保存为本地文件
@@ -118,9 +122,14 @@ void handleMsg()
 				cout<<"文件写入失败"<<endl;
 		}
 		else
-	      outfile<<recvbuf;
+		{
+	            outfile<<recvbuf;
+				char* path = getcwd(NULL,0);
+				cout<<"文件已保存到"<<path<<"/"<<filename<<endl;
+		}
 		outfile.close();
 		memset(&recvbuf,0,sizeof(recvbuf));
+		cout<<endl;
       }
 
         close(srv_sock);
