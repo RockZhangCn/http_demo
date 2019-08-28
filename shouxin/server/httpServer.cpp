@@ -13,9 +13,10 @@
 
 using namespace std;
 
-#define port 8086
-#define buf 2048
+#define port 8086          //本服务器的固定端口号
+#define buf 2048           //缓冲区大小
 
+/* 响应首部们  */
 const string headLine = "HTTP/1.1 200 OK\r\n";
 const string server = "Server: vivo-jsx\r\n";
 const string content_type = "Content-Type: text/html; charset=utf-8\r\n";
@@ -24,10 +25,10 @@ const string cache_control = "Cache-Control: private\r\n";
 const string spaceline = "\r\n";
 
 
-int srv_sock;//套接字文件描述符
+int srv_sock;                        //套接字文件描述符
 struct sockaddr_in srv_addr,clt_addr;//网络地址结构体
-socklen_t addrlen;//bind函数指定的地址类型
-pthread_t p;//处理事务的线程号
+socklen_t addrlen;                   //bind函数指定的地址类型
+//pthread_t pClient;                   //处理事务的线程号
 
 /*该结构体用于填充线程入口函数参数
  *fd:套接字描述符
@@ -109,19 +110,21 @@ void handleConnection()
                    cout<<"连接失败"<<endl;
 				   exit(1);
 			}	
-			string ipaddr = inet_ntoa(clt_addr.sin_addr);
+	        string ipaddr = inet_ntoa(clt_addr.sin_addr);
             int sock_port = ntohs(clt_addr.sin_port);
 			cout<<"Connect to:"<<ipaddr<<":"<<sock_port<<endl;
 			cout<<endl;
 			
 			//多线程处理连接
+			pthread_t p;
+			//组装参数
 			struct params *arg;
 			arg = (struct params*)malloc(sizeof(struct params));
 			arg->fd = clt_sock;
 			arg->ipaddr = ipaddr;
 			arg->sock_port=sock_port;
 
-			pthread_create(&p,NULL,handleRequest,(void*)arg);
+            pthread_create(&p,NULL,handleRequest,(void*)arg);
 			pthread_detach(p);
        
 			memset(&clt_addr,0,sizeof(clt_addr));
@@ -228,6 +231,7 @@ void* handleRequest(void* para)
 	  }
 	  
 	}
+	return NULL;
 
 }
 
