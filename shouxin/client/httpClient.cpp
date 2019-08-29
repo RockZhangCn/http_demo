@@ -35,7 +35,7 @@ string host;
 void requestData();
 void connectToServer();
 void init();
-string  getIP(string server);
+string getIP(string server);
 void saveFile();
 void mkdirs(char* path);
 
@@ -92,6 +92,7 @@ void init()
    srv_addr.sin_addr.s_addr = inet_addr(ipaddr);
 }
 
+/* DNS解析获取IP  */
 string getIP(string server)
 {
 		char first=server.at(0);
