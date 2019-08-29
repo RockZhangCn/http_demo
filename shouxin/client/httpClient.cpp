@@ -200,7 +200,7 @@ void saveFile()
         
 		//只有正确响应才保存文件
 		strncpy(resultCode,recvbuf+9,3);
-		cout<<resultCode<<endl;
+		
 	    if(strcmp(resultCode,"200")!=0)
 				return;
 
