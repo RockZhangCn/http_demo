@@ -7,9 +7,11 @@
 #include<string.h>
 #include<sys/socket.h>
 #include<stdio.h>
+#include<sys/socket.h>
 #include<netinet/in.h>
 #include<unistd.h>
 #include<pthread.h>
+#include<netdb.h>
 #include<unistd.h>
 #include<sys/ioctl.h>
 #include<sys/stat.h>
@@ -33,6 +35,7 @@ string host;
 void requestData();
 void connectToServer();
 void init();
+string  getIP(string server);
 void saveFile();
 void mkdirs(char* path);
 
@@ -42,7 +45,7 @@ char sendbuf[bufsize];      //发送缓冲区
 char content[bufsize];      //保存响应的文件内容
 
 /* 全局变量  */
-char url[100];              //用户输入的url  eg.  /index.html
+char url[50];              //用户输入的url  eg.  /index.html
 char ipaddr[20];            //服务器ip地址
 int port;                   //服务器端口号
 int srv_sock;               //套接字文件描述符
@@ -68,11 +71,12 @@ int main()
 void init()
 {
    //获取服务器信息
-   cout<<"目的IP："<<endl;
+   cout<<"目的地址："<<endl;
    cin>>ipaddr;
    cout<<"目的端口："<<endl;
    cin>>port;
-   string ip =ipaddr;
+   string ip =getIP(ipaddr);
+   strcpy(ipaddr,ip.data());
    host = "Host: "+ip+":"+to_string(port)+"\r\n";
    //创建socket
    srv_sock = socket(AF_INET,SOCK_STREAM,0);
@@ -86,6 +90,44 @@ void init()
    srv_addr.sin_family = AF_INET;
    srv_addr.sin_port =htons(port);
    srv_addr.sin_addr.s_addr = inet_addr(ipaddr);
+}
+
+string getIP(string server)
+{
+		char first=server.at(0);
+		
+		if(first>='0'&&first<='9')
+				return server;
+
+		char ipstr[17];
+		string ipaddr = "";
+		struct addrinfo hints;
+
+		memset(&hints,0,sizeof(hints));
+		hints.ai_family = AF_INET;
+		hints.ai_socktype = SOCK_STREAM;
+        
+		struct addrinfo * value;
+		if(getaddrinfo(server.data(),NULL,&hints,&value)!=0)
+		{
+				cout<<"DNS 解析失败"<<endl;
+				exit(1);
+		}
+		else
+		{
+				struct addrinfo* ptr = value;
+			    
+				struct sockaddr_in *s = (sockaddr_in*)ptr->ai_addr;
+			
+	     	    inet_ntop(AF_INET,&s->sin_addr.s_addr,ipstr,sizeof(ipstr)); 
+
+				ipaddr = ipstr;
+		}
+
+		freeaddrinfo(value);
+		return ipaddr;
+
+
 }
 
 /* 连接到服务器  */
@@ -147,30 +189,38 @@ void requestData()
 
 /* 保存文件  */
 void saveFile()
-{
-		//从url中获取文件名
-		char tok[100];
-		strcpy(tok,url);
+{      
+		
+		char tok[50];
+		strcpy(tok,url);            
+
         char* filename;             //请求的文件名，用于保存
         char filepath[100];         //保存url路径，便于保存文件
-        
+        char resultCode[10];        //判断响应码
+
+		//只有正确响应才保存文件
+		strncpy(resultCode,recvbuf+9,3);
+	    if(strcmp(resultCode,"200")!=0)
+				return;
+
+        //从URL分割出文件名
 		char* temp = strtok(tok,"/");
 		while(temp!=NULL)
 		{
 				filename = temp;
 				temp = strtok(NULL,"/");
 		}
-
+        //把查询字段剔除掉
         char* queryTag = strtok(filename,"?");
 		if(queryTag!=NULL)
 				filename = queryTag;
 	    
         //从url获取文件路径
-
 		int nameLen = strlen(filename);
 		int urlLen = strlen(url);
 
 		strncpy(filepath,url,urlLen-nameLen);
+
         //绝对路径拼接
 		string sfilePath = filepath;
 		string current_path = getcwd(NULL,0);
@@ -196,6 +246,7 @@ void saveFile()
 								break;
 						i++;
 				}
+				//提取报文主体
                 int recvlen = strlen(recvbuf);
 				strncpy(content,recvbuf+4+i,recvlen-i-4);
 	            outfile<<content;
@@ -229,6 +280,5 @@ void mkdirs(char *path)
 				}
 		}
 		if(len>0&&access(str,0)!=0)
-		     mkdir(str,0777);
+         mkdir(str,0777);
 }
-

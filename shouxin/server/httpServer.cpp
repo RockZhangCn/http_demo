@@ -17,7 +17,9 @@ using namespace std;
 #define buf 2048           //缓冲区大小
 
 /* 响应首部们  */
-const string headLine = "HTTP/1.1 200 OK\r\n";
+string headLine;
+const string version = "HTTP/1.1 ";
+string resultCodes[3] = {"200 OK","400 ,Bad Request","404 Not Found"};
 const string server = "Server: vivo-jsx\r\n";
 const string content_type = "Content-Type: text/html; charset=utf-8\r\n";
 const string connection = "Connection: keep-alive\r\n";
@@ -50,6 +52,7 @@ void init();//初始化操作
 void handleConnection();//等待连接并分配线程处理请求
 
 
+void makeResponse(char *sendbuf,string resultCode,string content);//等待连接并分配线程处理请求
 int main()
 {
     init();
@@ -178,17 +181,31 @@ void* handleRequest(void* para)
 		  //分解字符串,取出URL
 		  if(strstr(recvbuf,"HTTP")==NULL)
 		  {
-				  char requestError[]="本服务器只接受HTTP GET请求";
+				  string requestError="本服务器只接受HTTP GET请求";
 				  cout<<"无效的请求"<<endl;
-				  send(fd,requestError,sizeof(requestError),0);
+                 
+				  
+                  makeResponse(sendbuf,resultCodes[1],requestError);
+
+				  send(fd,sendbuf,strlen(sendbuf),0);
+
+                  memset(&sendbuf,0,sizeof(sendbuf));
+				  
 				  continue;
 		  }
           strcpy(method,strtok(recvbuf,"/"));
 		  if(strcmp(method,"GET")==0)
 		  {
-                  char not_get[]="本服务器仅处理GET请求";
+                  string not_get="本服务器仅处理GET请求";
 				  cout<<"非GET HTTP请求"<<endl;
-				  send(fd,not_get,sizeof(not_get),0);
+
+                  
+                  makeResponse(sendbuf,resultCodes[1],not_get);
+
+				  send(fd,sendbuf,strlen(sendbuf),0);
+
+               
+                  memset(&sendbuf,0,sizeof(sendbuf));
 				  continue;
 		  }
           strcpy(url,strtok(NULL," "));
@@ -197,9 +214,15 @@ void* handleRequest(void* para)
           ifstream fin(url);
 		  if(!fin.is_open())
 		  {
-				  char no_file[50]="没有该文件！请确认文件名\r\n";
+				  string no_file="没有该文件！请确认文件名\r\n";
 				  cout<<"没有该文件"<<endl;
-				  send(fd,no_file,sizeof(no_file),0);
+
+                  makeResponse(sendbuf,resultCodes[2],no_file);
+
+				  send(fd,sendbuf,strlen(sendbuf),0);
+
+                 
+                  memset(&sendbuf,0,sizeof(sendbuf));
 				  continue;
 		  }
           string s;
@@ -208,10 +231,8 @@ void* handleRequest(void* para)
                 s_text = s_text + s + "\r\n";  
 		  }
 		  //组装响应报文
-		  int size = s_text.length();
-          s_send = headLine+server+content_type+"Content-Size: "+to_string(size)+"\r\n"+connection+cache_control+spaceline+s_text+"\0";
-		  
-		  strcpy(sendbuf,s_send.data());
+          makeResponse(sendbuf,resultCodes[0],s_text);
+ 		  
 
 		 if(send(fd,sendbuf,strlen(sendbuf),0) == -1)
 		 {
@@ -226,7 +247,7 @@ void* handleRequest(void* para)
 		 memset(&recvbuf,0,sizeof(recvbuf));
 		 memset(&url,0,sizeof(url));
 		 memset(&method,0,sizeof(method));
-		 s_send="";
+		 
 		 s_text="";
 		 fin.close();
 		 
@@ -237,4 +258,9 @@ void* handleRequest(void* para)
 
 }
 
+void makeResponse(char* sendbuf,string resultCode,string content)
+{
+		string s_send = version+resultCode+"\r\n"+server+"Content-Size: "+to_string(content.length())+"\r\n"+content_type+connection+cache_control+spaceline+content;
+		strcpy(sendbuf,s_send.data());
 
+}
