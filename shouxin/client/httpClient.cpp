@@ -17,7 +17,7 @@
 #include<sys/stat.h>
 #include<sys/types.h>
 using namespace std;
-#define bufsize 20000           //缓冲区大小
+#define bufsize 10000           //缓冲区大小
 
 /* 请求首部信息  */
 const string method = "GET ";
@@ -47,6 +47,7 @@ char content[bufsize];      //保存响应的文件内容
 /* 全局变量  */
 char url[50];              //用户输入的url  eg.  /index.html
 char ipaddr[20];            //服务器ip地址
+char filepath[100];         //保存url路径，便于保存文件
 int port;                   //服务器端口号
 int srv_sock;               //套接字文件描述符
 struct sockaddr_in srv_addr;//网络地址
@@ -191,16 +192,15 @@ void requestData()
 /* 保存文件  */
 void saveFile()
 {      
-		
 		char tok[50];
 		strcpy(tok,url);            
 
         char* filename;             //请求的文件名，用于保存
-        char filepath[100];         //保存url路径，便于保存文件
-        char resultCode[10];        //判断响应码
-
+        char resultCode[4];        //判断响应码
+        
 		//只有正确响应才保存文件
 		strncpy(resultCode,recvbuf+9,3);
+		cout<<resultCode<<endl;
 	    if(strcmp(resultCode,"200")!=0)
 				return;
 
@@ -219,9 +219,7 @@ void saveFile()
         //从url获取文件路径
 		int nameLen = strlen(filename);
 		int urlLen = strlen(url);
-
 		strncpy(filepath,url,urlLen-nameLen);
-
         //绝对路径拼接
 		string sfilePath = filepath;
 		string current_path = getcwd(NULL,0);
