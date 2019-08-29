@@ -150,7 +150,7 @@ void* handleRequest(void* para)
     char sendbuf[buf];
 	char recvbuf[buf];
     char method[20];
-    char url[30];
+    char url[100];
 
 	//发送文本
 	string s_send;
@@ -215,15 +215,17 @@ void* handleRequest(void* para)
 
 		 if(send(fd,sendbuf,strlen(sendbuf),0) == -1)
 		 {
-				 cout<<"response error"<<endl;
+				 cout<<"响应失败"<<endl;
 				 exit(1);
 		 }
 		 else
-				 cout<<"response success!"<<endl;
+				 cout<<"响应成功!"<<endl;
 	  
      	 //清空缓存
 		 memset(&sendbuf,0,sizeof(sendbuf));
 		 memset(&recvbuf,0,sizeof(recvbuf));
+		 memset(&url,0,sizeof(url));
+		 memset(&method,0,sizeof(method));
 		 s_send="";
 		 s_text="";
 		 fin.close();

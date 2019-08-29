@@ -12,9 +12,10 @@
 #include<pthread.h>
 #include<unistd.h>
 #include<sys/ioctl.h>
-
+#include<sys/stat.h>
+#include<sys/types.h>
 using namespace std;
-#define bufsize 1024           //缓冲区大小
+#define bufsize 20000           //缓冲区大小
 
 /* 请求首部信息  */
 const string method = "GET ";
@@ -33,6 +34,7 @@ void requestData();
 void connectToServer();
 void init();
 void saveFile();
+void mkdirs(char* path);
 
 /* 缓冲区变量  */
 char recvbuf[bufsize];      //接收缓冲区
@@ -43,7 +45,6 @@ char content[bufsize];      //保存响应的文件内容
 char url[100];              //用户输入的url  eg.  /index.html
 char ipaddr[20];            //服务器ip地址
 int port;                   //服务器端口号
-char* filename;             //请求的文件名，用于保存
 int srv_sock;               //套接字文件描述符
 struct sockaddr_in srv_addr;//网络地址
 
@@ -106,10 +107,11 @@ void requestData()
 	  while(1)
 	  {
 	    
-	    cout<<"输入请求url:"<<endl;
+	    cout<<"输入请求url:  (输入exit退出连接)"<<endl;
 	    cin>>url;
 	    
 	    cout<<endl;
+		
         //退出处理
 	    if(strcmp(url,"exit")==0)
 	    { 
@@ -129,13 +131,13 @@ void requestData()
 			cout<<"接受文件错误！！"<<endl;
 			exit(1);
      	}
-		cout<<"收到来自"<<inet_ntoa(srv_addr.sin_addr)<<":"<<srv_addr.sin_port<<"的响应："<<endl;
+		cout<<"收到来自"<<inet_ntoa(srv_addr.sin_addr)<<":"<<ntohs(srv_addr.sin_port)<<"的响应："<<endl;
         cout<<endl;
 		cout<<recvbuf<<endl;
 
 		//保存文件到本地
-		savefile();
-
+		saveFile();
+        memset(&url,0,sizeof(url));
 		memset(&recvbuf,0,sizeof(recvbuf));
 		cout<<endl;
       }
@@ -147,18 +149,39 @@ void requestData()
 void saveFile()
 {
 		//从url中获取文件名
-		char* temp = strtok(url,"/");
+		char tok[100];
+		strcpy(tok,url);
+        char* filename;             //请求的文件名，用于保存
+        char filepath[100];         //保存url路径，便于保存文件
+        
+		char* temp = strtok(tok,"/");
 		while(temp!=NULL)
-		{       
-				filename=temp;
-				temp=strtok(NULL,"/");
+		{
+				filename = temp;
+				temp = strtok(NULL,"/");
 		}
+
         char* queryTag = strtok(filename,"?");
 		if(queryTag!=NULL)
 				filename = queryTag;
+	    
+        //从url获取文件路径
+
+		int nameLen = strlen(filename);
+		int urlLen = strlen(url);
+
+		strncpy(filepath,url,urlLen-nameLen);
+        //绝对路径拼接
+		string sfilePath = filepath;
+		string current_path = getcwd(NULL,0);
+        string full_path = current_path+sfilePath;
+   
+        strcpy(filepath,full_path.c_str());
+        //本地新建目录保存
+        mkdirs(filepath);
 
 		//写入文件
-		ofstream outfile(filename);
+		ofstream outfile(full_path+filename);
 		if(!outfile.is_open())
 		{
 				cout<<"文件写入失败"<<endl;
@@ -176,9 +199,36 @@ void saveFile()
                 int recvlen = strlen(recvbuf);
 				strncpy(content,recvbuf+4+i,recvlen-i-4);
 	            outfile<<content;
-				char* path = getcwd(NULL,0);
-				cout<<"文件已保存到"<<path<<"/"<<filename<<endl;
+				cout<<"文件已保存到"<<full_path<<filename<<endl;
 		}
+	
+		memset(&content,0,sizeof(content));
 		outfile.close();
 
 }
+
+/* 目录新建  */
+void mkdirs(char *path)
+{
+
+		char str[100];
+		strcpy(str,path);
+
+		int len = strlen(str);
+
+		for(int i=0;i<len;i++)
+		{
+				if(str[i]=='/')
+				{
+						str[i]='\0';
+						if(access(str,0)!=0)
+						{
+								mkdir(str,0777);
+						}
+						str[i]='/';
+				}
+		}
+		if(len>0&&access(str,0)!=0)
+		     mkdir(str,0777);
+}
+
