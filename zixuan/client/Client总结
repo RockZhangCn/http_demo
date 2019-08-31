@@ -1,0 +1,12 @@
+一:使用说明
+1.使用说明进入build-Client-unknown-Debug目录
+2.输入./Client
+二:实现功能
+1.TCP的创建和收发数据
+2.根据域名解析IP地址
+3.创建request请求报文
+4.自定义connect函数,可设定超时时间
+5.解析response报文,可将首部字段分别存储,获取responseBody
+三:以后任务
+1.满足其他方法的请求报文
+2.根据responseBod发送子资源的请求报文
